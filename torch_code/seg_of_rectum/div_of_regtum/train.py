@@ -134,7 +134,7 @@ if __name__ == "__main__":
     label_path = '/home/zhangqianru/data/seg_of_rectum/div_of_rectum/seg_label_2Dslice'
     ckpt_path = '/home/zhangqianru/data/seg_of_rectum/div_of_rectum/ckpt'
     xls_path = '/home/zhangqianru/data/seg_of_rectum/div_of_rectum/xls'
-    # model_set = ['unet', 'unet_3layers', 'unet_3layers_with_vgg_loss', 'unet_with_vgg_loss']
-    model_set = ['unet_3layers']
+    model_set = ['unet', 'unet_3layers', 'unet_3layers_with_vgg_loss', 'unet_with_vgg_loss']
+    # model_set = ['unet_3layers']
 
     train_nets(img_path, ori_seg_path, label_path, ckpt_path, xls_path, model_set)

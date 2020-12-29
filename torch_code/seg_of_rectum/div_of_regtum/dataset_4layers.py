@@ -30,22 +30,28 @@ class Dataset4Layers(Dataset):
 
         img_path = os.path.join(self.img_path, self.train_phrase, file_name)
         img = imageio.imread(img_path)
+        img = self.normalize(img)
         last_img = self.get_layer(file_name_split[0], layer - 1, img)
+        last_img = self.normalize(last_img)
         next_img = self.get_layer(file_name_split[0], layer + 1, img)
+        next_img = self.normalize(next_img)
         ori_seg_img_path = os.path.join(self.ori_seg_path, self.train_phrase, file_name)
         if os.path.exists(ori_seg_img_path):
             ori_seg_img = imageio.imread(ori_seg_img_path)
         else:
             ori_seg_img = np.zeros(img.shape)
+        ori_seg_img = self.normalize(ori_seg_img)
         features = [last_img, img, next_img, ori_seg_img]
         features = np.array(features).astype('float32')
-        features = torch.from_numpy((features + exp_) / (features.max() + exp_))
+        features = torch.from_numpy(features)
 
         label_path = os.path.join(self.label_path, self.train_phrase, file_name)
         label = imageio.imread(label_path)
+        if label.max() != 0:
+            label = label / label.max()
         labels = [label]
         labels = np.array(labels).astype('float32')
-        labels = torch.from_numpy(labels / 255)
+        labels = torch.from_numpy(labels)
 
         return {
             'file_name': file_name,
@@ -60,4 +66,9 @@ class Dataset4Layers(Dataset):
             img = imageio.imread(img_path)
         else:
             img = self_img
+        return img
+
+    def normalize(self, img):
+        if img.max() != 0:
+            return img / img.max()
         return img
