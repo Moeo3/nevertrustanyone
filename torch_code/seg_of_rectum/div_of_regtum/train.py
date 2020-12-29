@@ -10,7 +10,7 @@ from torch.optim import Adam
 from torch.optim.lr_scheduler import StepLR
 from vgg_pretrained import VggPretrained
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 
 def init_weight(model):
     for m in model.modules():
@@ -67,6 +67,7 @@ def epoch_step(dataloder, net, opt, vgg_tag, loss, train_phrase, device):
 
 def save_ckpt(ckpt_path, model_name, epoch, dict):
     ckpt_path = os.path.join(ckpt_path, model_name)
+    epoch = str(epoch).zfill(2)
     if not os.path.exists(ckpt_path):
         os.mkdir(ckpt_path)
     save_path = os.path.join(ckpt_path, f'epoch{epoch}.pth')
@@ -78,19 +79,21 @@ def train(img_path, ori_seg_path, label_path, ckpt_path, xls_path, ws, model, mo
     val_set = Dataset(img_path, ori_seg_path, label_path, 'val')
     val_loader = DataLoader(val_set, batch_size=3, shuffle=False)
 
-    opt = Adam(model.parameters())
-    sch = StepLR(opt, step_size=3, gamma=0.7)
+    opt = Adam(model.parameters(), lr=1e-4)
+    sch = StepLR(opt, step_size=10, gamma=0.6)
     loss = DiceLoss()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = model.float().to(device)
 
     max_epoch = 61
+    # max_epoch = 2
     cnt = 0
-    stop_count = 15
+    stop_count = 10
     min_dice_loss = 1.
     stop_flag = False
     for i in range(max_epoch):
         dice_loss_train = epoch_step(train_loader, model, opt, vgg_tag, loss, 'train', device)
+        # dice_loss_train = epoch_step(val_loader, model, opt, vgg_tag, loss, 'train', device)
         dice_loss_val = epoch_step(val_loader, model, opt, vgg_tag, loss, 'val', device)
         loss_list = [dice_loss_train, dice_loss_val]
         for j in range(len(loss_list)):
@@ -105,20 +108,17 @@ def train(img_path, ori_seg_path, label_path, ckpt_path, xls_path, ws, model, mo
         else:
             cnt = cnt + 1
         if cnt == stop_count:
-            # save_ckpt(ckpt_path, model_name, i, model.state_dict())
             stop_flag = True
             break
-        # if i % 10 == 0:
-        #     save_ckpt(ckpt_path, model_name, i, model.state_dict())
         sch.step()
     if not stop_flag:
         save_ckpt(ckpt_path, model_name, max_epoch - 1, model.state_dict())
     return ws
 
 def train_nets(img_path, ori_seg_path, label_path, ckpt_path, xls_path, model_set):
-    wb = xlwt.Workbook()
     for i in range(len(model_set)):
-        ws = wb.add_sheet(str(i))
+        wb = xlwt.Workbook()
+        ws = wb.add_sheet('loss')
         model_name = model_set[i]
         model, Dataset = load_model_and_dataset(model_name)
         if model_name.find('vgg_loss') >= 0:
@@ -134,7 +134,9 @@ if __name__ == "__main__":
     label_path = '/home/zhangqianru/data/seg_of_rectum/div_of_rectum/seg_label_2Dslice'
     ckpt_path = '/home/zhangqianru/data/seg_of_rectum/div_of_rectum/ckpt'
     xls_path = '/home/zhangqianru/data/seg_of_rectum/div_of_rectum/xls'
-    model_set = ['unet', 'unet_3layers', 'unet_3layers_with_vgg_loss', 'unet_with_vgg_loss']
-    # model_set = ['unet_3layers']
+    # model_set = ['unet', 'unet_3layers', 'unet_3layers_with_vgg_loss', 'unet_with_vgg_loss']
+    # model_set = ['unet', 'unet_3layers']
+    # model_set = ['unet_3layers_with_vgg_loss']
+    model_set = ['unet_with_vgg_loss']
 
     train_nets(img_path, ori_seg_path, label_path, ckpt_path, xls_path, model_set)
