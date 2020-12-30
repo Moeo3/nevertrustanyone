@@ -4,6 +4,7 @@ import torch
 from unet import UNet
 from dataset_2layers import Dataset2Layers
 from dataset_4layers import Dataset4Layers
+from emb_dataset import EmbDataset
 from torch.utils.data import DataLoader
 import numpy as np
 from skimage import color
@@ -28,7 +29,7 @@ def save_mask(pred, file_name, model_name, train_phrase, mask_path):
     file_path = os.path.join(save_path, file_name)
     imageio.imwrite(file_path, pred)
 
-def predict(img_path, ckpt_path, model_name, train_phrase, display_path, mask_path):
+def predict(img_path, ckpt_path, model_name, train_phrase, display_path, mask_path, model_res_path):
     ckpt_path_ = os.path.join(ckpt_path, model_name)
     ckpt = os.listdir(ckpt_path_)
     ckpt.sort(reverse=True)
@@ -37,13 +38,19 @@ def predict(img_path, ckpt_path, model_name, train_phrase, display_path, mask_pa
     if model_name.find('3layers') >= 0:
         model = UNet(channels_in=4, channels_out=1)
         Dataset = Dataset4Layers
+    elif model_name == 'emb':
+        model = UNet(channels_in=5, channels_out=1)
+        Dataset = EmbDataset
     else:
         model = UNet(channels_in=2, channels_out=1)
         Dataset = Dataset2Layers
 
     model.load_state_dict(torch.load(os.path.join(ckpt_path, model_name, ckpt)))
 
-    set = Dataset(img_path, ori_seg_path, img_path, train_phrase)
+    if model_name == 'emb':
+        set = EmbDataset(img_path, img_path, model_res_path, ['unet', 'unet_3layers', 'unet_3layers_with_vgg_loss', 'unet_with_vgg_loss'], train_phrase)
+    else:
+        set = Dataset(img_path, ori_seg_path, img_path, train_phrase)
     loader = DataLoader(set, batch_size=3, shuffle=False)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -66,11 +73,13 @@ if __name__ == "__main__":
     mask_path = '/home/zhangqianru/data/seg_of_rectum/div_of_rectum/model_results/mask'
     img_path = '/home/zhangqianru/data/seg_of_rectum/div_of_rectum/origin_img_2Dslice'
     ori_seg_path = '/home/zhangqianru/data/seg_of_rectum/div_of_rectum/original_seg_2Dslice'
+    model_res_path = '/home/zhangqianru/data/seg_of_rectum/div_of_rectum/model_results/mask'
     ckpt_path = '/home/zhangqianru/data/seg_of_rectum/div_of_rectum/ckpt'
     # model_set = ['unet', 'unet_3layers', 'unet_3layers_with_vgg_loss', 'unet_with_vgg_loss']
-    model_set = ['unet_3layers', 'unet_3layers_with_vgg_loss']
+    # model_set = ['unet_3layers', 'unet_3layers_with_vgg_loss']
+    model_set = ['emb']
 
     for model in model_set:
-        predict(img_path, ckpt_path, model, 'train', display_path, mask_path)
-        predict(img_path, ckpt_path, model, 'val', display_path, mask_path)
+        predict(img_path, ckpt_path, model, 'train', display_path, mask_path, model_res_path)
+        predict(img_path, ckpt_path, model, 'val', display_path, mask_path, model_res_path)
     pass

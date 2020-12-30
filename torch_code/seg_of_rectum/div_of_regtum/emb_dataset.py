@@ -16,7 +16,7 @@ class EmbDataset(Dataset):
 
     def get_ids(self):
         path = os.path.join(self.img_path, self.train_phrase)
-        arr = [x for x in os.listdir(path) if x.endswith('.mhd')]
+        arr = [x for x in os.listdir(path) if x.endswith('.png')]
         arr.sort()
         return arr
 
@@ -31,7 +31,7 @@ class EmbDataset(Dataset):
         features = [feature]
 
         for model in self.model_set:
-            feature_path = os.path.join(self.model_res_path, model, self.train_phrase, name)
+            feature_path = os.path.join(self.model_res_path, self.train_phrase, model, name)
             feature = imageio.imread(feature_path)
             feature = self.normalize(feature)
             features.append(feature)
