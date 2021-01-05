@@ -1,8 +1,8 @@
 import xlwt, torch, os
 from unet import UNet
 from dice_loss import DiceLoss
-from dataset_1layer import Dataset1Layer
-from dataset_3layers import Dataset3Layers
+from dataset_2layers import Dataset2Layers
+from dataset_4layers import Dataset4Layers
 from torch.nn import BatchNorm2d, Conv2d, MSELoss
 from torch.nn.init import kaiming_normal_
 from torch.utils.data import DataLoader
@@ -10,7 +10,7 @@ from torch.optim import Adam
 from torch.optim.lr_scheduler import StepLR
 from vgg_pretrained import VggPretrained
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 def init_weight(model):
     for m in model.modules():
@@ -24,13 +24,13 @@ def init_weight(model):
 
 def load_model_and_dataset(model_name):
     if model_name.find('3layers') >= 0:
-        model = UNet(channels_in=3, channels_out=1)
-        Dataset = Dataset3Layers
+        model = UNet(channels_in=4, channels_out=1)
+        dataset = Dataset4Layers
     else:
-        model = UNet(channels_in=1, channels_out=1)
-        Dataset = Dataset1Layer
+        model = UNet(channels_in=2, channels_out=1)
+        dataset = Dataset2Layers
     model.apply(init_weight)
-    return model, Dataset
+    return model, dataset
 
 def epoch_step(dataloder, net, opt, vgg_tag, loss, train_phrase, device):
     if train_phrase == 'train':
@@ -73,14 +73,14 @@ def save_ckpt(ckpt_path, model_name, epoch, dict):
     save_path = os.path.join(ckpt_path, f'epoch{epoch}.pth')
     torch.save(dict, save_path)
 
-def train(img_path, label_path, ckpt_path, xls_path, ws, model, model_name, Dataset, vgg_tag):
-    train_set = Dataset(img_path, label_path, 'train')
+def train(img_path, ori_seg_path, label_path, ckpt_path, xls_path, ws, model, model_name, Dataset, vgg_tag):
+    train_set = Dataset(img_path, ori_seg_path, label_path, 'train')
     train_loader = DataLoader(train_set, batch_size=3, shuffle=True)
-    val_set = Dataset(img_path, label_path, 'val')
+    val_set = Dataset(img_path, ori_seg_path, label_path, 'val')
     val_loader = DataLoader(val_set, batch_size=3, shuffle=False)
 
-    opt = Adam(model.parameters(), 1e-4, betas=(0.9, 0.999))
-    sch = StepLR(opt, step_size=30, gamma=0.8)
+    opt = Adam(model.parameters(), lr=1e-3, betas=(0.8, 0.9))
+    sch = StepLR(opt, step_size=40, gamma=0.9)
     loss = DiceLoss()
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     model = model.float().to(device)
@@ -111,33 +111,33 @@ def train(img_path, label_path, ckpt_path, xls_path, ws, model, model_name, Data
             stop_flag = True
             break
         sch.step()
-
     if not stop_flag:
         save_ckpt(ckpt_path, model_name, max_epoch - 1, model.state_dict())
     return ws
 
-def train_nets(img_path, label_path, ckpt_path, xls_path, model_set):
+def train_nets(img_path, ori_seg_path, label_path, ckpt_path, xls_path, model_set):
     for i in range(len(model_set)):
         wb = xlwt.Workbook()
-        ws = wb.add_sheet('diceloss')
+        ws = wb.add_sheet('loss')
         model_name = model_set[i]
         model, Dataset = load_model_and_dataset(model_name)
         if model_name.find('vgg_loss') >= 0:
             vgg_tag = True
         else:
             vgg_tag = False
-        ws = train(img_path, label_path, ckpt_path, xls_path, ws, model, model_name, Dataset, vgg_tag)
-        wb.save(os.path.join(xls_path, f'seg_of_rectum_{model_name}.xls'))
+        ws = train(img_path, ori_seg_path, label_path, ckpt_path, xls_path, ws, model, model_name, Dataset, vgg_tag)
+        wb.save(os.path.join(xls_path, f'seg_of_rectum_{model_name}_with_ori_seg.xls'))
 
 if __name__ == "__main__":
     img_path = '/home/zhangqianru/data/seg_of_rectum/div_of_rectum/origin_img_2Dslice'
+    ori_seg_path = '/home/zhangqianru/data/seg_of_rectum/div_of_rectum/original_seg_2Dslice'
     label_path = '/home/zhangqianru/data/seg_of_rectum/div_of_rectum/seg_label_2Dslice'
-    ckpt_path = '/home/zhangqianru/data/seg_of_rectum/div_of_rectum/ckpt'
-    xls_path = '/home/zhangqianru/data/seg_of_rectum/div_of_rectum/xls'
-    # model_set = ['unet', 'unet_3layers', 'unet_3layers_with_vgg_loss', 'unet_with_vgg_loss']
-    # model_set = ['unet', 'unet_3layers']
-    # model_set = ['unet']
-    # model_set = ['unet_with_vgg_loss']
-    model_set = ['unet_3layers']
 
-    train_nets(img_path, label_path, ckpt_path, xls_path, model_set)
+    ckpt_path = '/home/zhangqianru/data/seg_of_rectum/div_of_rectum/ckpt_with_ori_seg'
+    xls_path = '/home/zhangqianru/data/seg_of_rectum/div_of_rectum/xls_with_ori_seg'
+    # model_set = ['unet', 'unet_3layers', 'unet_3layers_with_vgg_loss', 'unet_with_vgg_loss']
+    model_set = ['unet_3layers']
+    # model_set = ['unet_3layers_with_vgg_loss']
+    # model_set = ['unet_with_vgg_loss']
+
+    train_nets(img_path, ori_seg_path, label_path, ckpt_path, xls_path, model_set)

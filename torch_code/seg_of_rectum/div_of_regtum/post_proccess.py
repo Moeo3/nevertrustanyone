@@ -142,10 +142,10 @@ if __name__ == "__main__":
     model_res_path = '/home/zhangqianru/data/seg_of_rectum/div_of_rectum/model_results/mask'
     save_path = '/home/zhangqianru/data/seg_of_rectum/div_of_rectum/mask_post'
     # model_set = ['unet', 'unet_3layers', 'unet_3layers_with_vgg_loss', 'unet_with_vgg_loss', 'emb']
-    model_set = ['unet']
+    model_set = ['unet_3layers']
 
     for model in model_set:
-        # proccessing(model_res_path, save_path, model, 'train')
+        proccessing(model_res_path, save_path, model, 'train')
         proccessing(model_res_path, save_path, model, 'val')
 
     pass
