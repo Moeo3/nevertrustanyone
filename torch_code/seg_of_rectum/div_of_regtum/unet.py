@@ -1,4 +1,4 @@
-from torch.nn import Sequential, ReLU, Conv2d, BatchNorm2d, MaxPool2d, Module, ConvTranspose2d, Sigmoid, ModuleList
+from torch.nn import Sequential, LeakyReLU, Conv2d, InstanceNorm2d, MaxPool2d, Module, ConvTranspose2d, Sigmoid, ModuleList
 import torch
 
 
@@ -7,7 +7,7 @@ class Conv33(Module):
         super(Conv33, self).__init__()
         self.conv_33 = Sequential(
             Conv2d(channels_in, channels_out, 3, padding=1, padding_mode='reflect'),
-            BatchNorm2d(channels_out),
+            InstanceNorm2d(channels_out),
             acti
         )
         pass
@@ -51,7 +51,7 @@ class UpBlock(Module):
 
 
 class UNet(Module):
-    def __init__(self, channels_in=1, channels_out=1, conv_start_channels=64, depth=4, acti=ReLU(inplace=True)):
+    def __init__(self, channels_in=1, channels_out=1, conv_start_channels=64, depth=4, acti=LeakyReLU(inplace=True)):
         super(UNet, self).__init__()
         self.depth = depth
 

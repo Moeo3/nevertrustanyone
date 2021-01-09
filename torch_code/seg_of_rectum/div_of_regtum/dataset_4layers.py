@@ -16,14 +16,28 @@ class Dataset4Layers(Dataset):
     
     def get_names(self):
         path = os.path.join(self.img_path, self.train_phrase)
-        arr = [x for x in os.listdir(path) if x.endswith('.png')]
-        arr.sort()
+        files = os.listdir(path)
+        files.sort()
+        last_name = ''
+        arr = []
+        for file_name in files:
+            if not file_name.endswith('.png'):
+                continue
+            file_name_split = [''.join(list(g)) for k, g in groupby(file_name, key=lambda x: x.isdigit())]
+            patient_name = file_name_split[0]
+            if patient_name == last_name:
+                arr.append(file_name)
+            else:
+                arr = arr[0: -1]
+                last_name = patient_name
+        # arr = [x for x in os.listdir(path) if x.endswith('.png')]
+        # arr.sort()
         return arr
 
     def __len__(self):
         return len(self.names)
 
-    def __getitem__(self, idx, exp_=1e-6):
+    def __getitem__(self, idx):
         file_name = self.names[idx]
         file_name_split = [''.join(list(g)) for k, g in groupby(file_name, key=lambda x: x.isdigit())]
         layer = int(file_name_split[1])
@@ -47,8 +61,7 @@ class Dataset4Layers(Dataset):
 
         label_path = os.path.join(self.label_path, self.train_phrase, file_name)
         label = imageio.imread(label_path)
-        if label.max() != 0:
-            label = label / label.max()
+        label = self.normalize(label)
         labels = [label]
         labels = np.array(labels).astype('float32')
         labels = torch.from_numpy(labels)

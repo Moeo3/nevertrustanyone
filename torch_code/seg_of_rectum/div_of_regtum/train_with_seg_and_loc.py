@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader
 from torch.optim import Adam
 from torch.optim.lr_scheduler import StepLR
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = "2"
 
 def init_weight(model):
     for m in model.modules():
@@ -54,7 +54,7 @@ def train(img_path, ori_seg_path, location_path, label_path, ckpt_path, xls_path
     wb = xlwt.Workbook()
     ws = wb.add_sheet('dice loss')
 
-    model = UNet(channels_in=3, channels_out=1)
+    model = UNet(channels_in=2, channels_out=1)
     model.apply(init_weight)
 
     train_set = Dataset(img_path, ori_seg_path, location_path, label_path, 'train')
@@ -63,7 +63,7 @@ def train(img_path, ori_seg_path, location_path, label_path, ckpt_path, xls_path
     val_loader = DataLoader(val_set, batch_size=3, shuffle=False)
 
     opt = Adam(model.parameters(), lr=1e-4, betas=(0.9, 0.999))
-    sch = StepLR(opt, step_size=30, gamma=0.6)
+    sch = StepLR(opt, step_size=20, gamma=0.7)
     loss = DiceLoss()
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
