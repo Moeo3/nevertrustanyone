@@ -1,4 +1,4 @@
-from torch.nn import Module, Sequential, LeakyReLU, Conv2d, BatchNorm2d, AvgPool2d, MaxPool2d, AdaptiveAvgPool2d, Linear
+from torch.nn import Module, Sequential, LeakyReLU, Conv2d, BatchNorm2d, AvgPool2d, MaxPool2d, AdaptiveAvgPool2d, Linear, Sigmoid
 import torch
 
 class Conv2d_BN(Module):
@@ -162,9 +162,9 @@ class GuguNetV3(Module):
             InceptionE(2048)
         )  # 2048 channels
         self.out_block = Sequential(
-            Conv2d_BN(2048, 1024, 1, stride=1, padding=0),
-            AdaptiveAvgPool2d(1)
-        )  # 1024 channels
+            # Conv2d_BN(2048, 1024, 1, stride=1, padding=0),
+            AdaptiveAvgPool2d(1),
+        )
         self.full_connect = Linear(1024, 1)
         
     def forward(self, x):

@@ -2,7 +2,7 @@ import os
 import numpy as np
 import imageio
 
-def get_the_patch(num, img, mask, cancer_seg, save_path, score_path, patch_size=48, step_width=8):
+def get_the_patch(num, img, mask, cancer_seg, save_path, score_path, file_name, patch_size=48, step_width=8):
     maxh, maxw = img.shape[0], img.shape[1]
     site = np.where(mask > 0)
     high, low, left, right = site[0].min(), site[0].max(), site[1].min(), site[1].max()
@@ -18,9 +18,9 @@ def get_the_patch(num, img, mask, cancer_seg, save_path, score_path, patch_size=
                 continue
             score = sum(sum(cancer_seg[a:b, c:d] / 255)) / (patch_size * patch_size)
             patch = img[a:b, c:d]
-            imageio.imwrite(os.path.join(save_path, f'{num}.png'), patch)
+            imageio.imwrite(os.path.join(save_path, f'{str(num).zfill(6)}_{file_name}'), patch)
             with open(score_path, 'a') as f:
-                f.write(f'{num}, {score} \n')
+                f.write(f'{str(num).zfill(6)}_{file_name}, {score} \n')
             num = num + 1
     return num
 
@@ -42,7 +42,7 @@ def find_patchs(img_path, seg_path, mask_path, patch_path, score_path, train_phr
             continue
         img = imageio.imread(os.path.join(img_path, file_name))
         mask = imageio.imread(os.path.join(mask_path, file_name))
-        num = get_the_patch(num, img, mask, seg, patch_path, score_path)
+        num = get_the_patch(num, img, mask, seg, patch_path, score_path, file_name)
         
 
 if __name__ == "__main__":
